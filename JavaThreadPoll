@@ -1,0 +1,70 @@
+//核心代码：
+package ThreadPoolTest;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingDeque;
+
+import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.stream.IntStream;
+
+public class ThreadPool {
+    private static final int SIZE = 5;
+    private BlockingDeque<Runnable> workQueue;
+    private List<WorkThread> workThreads = new ArrayList<WorkThread>();
+
+    public ThreadPool(int poolSize, BlockingDeque<Runnable> workQueue) {
+        this.workQueue = workQueue;
+
+        IntStream.range(0, poolSize).forEach((i)-> {
+            WorkThread workThread = new WorkThread();
+            workThread.start();
+            workThreads.add(workThread);
+        });
+    }
+
+    public ThreadPool(int poolSize)
+    {
+        this(poolSize, new LinkedBlockingDeque<>(SIZE));
+    }
+
+    public void execute(Runnable task) {
+        try {
+            workQueue.put(task);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    class WorkThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Runnable workTask = workQueue.take();
+                    workTask.run();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+
+//测试代码：
+package ThreadPoolTest;
+import java.util.stream.IntStream;
+
+public class ThreadPoolTest {
+    public static void main(String[] args) {
+        ThreadPool threadPool = new ThreadPool(10);
+        IntStream.range(0, 10).forEach((i)->{
+            threadPool.execute(()->{
+                System.out.println(Thread.currentThread().getName() + "---->>Hello ThreadPool");
+            });
+        });
+    }
+}
+
+//原文链接：https://blog.csdn.net/chenmi123321/article/details/126756529
